@@ -28,9 +28,10 @@
 ## Установка (Blender 4.2+)
 
 1. **Освободите порт 9876** — отключите другие MCP-аддоны, перезапустите Blender.
-2. `Edit → Preferences → Get Extensions → ≡ → Install from Disk…` → `zcode_mcp.zip`.
-3. Включите **ZCode MCP** — сервер стартует сам.
-4. Проверка: `/mcp` в ZCode → `connected`, зелёный кружок в панели.
+2. Скачайте `zcode_mcp.zip` со страницы [последнего релиза](https://github.com/abyrvalg379/zcode-mcp/releases/latest).
+3. `Edit → Preferences → Get Extensions → ≡ → Install from Disk…` → выберите zip.
+4. Включите **ZCode MCP** — сервер стартует сам.
+5. Проверка: `/mcp` в ZCode → `connected`, зелёный кружок в панели.
 
 ## Настройки (Preferences → Add-ons → ZCode MCP)
 

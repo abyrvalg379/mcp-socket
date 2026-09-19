@@ -36,10 +36,11 @@ Author: **Maksim Kovalev** · License: GPL-3.0-or-later
 1. **Free the port.** Disable any other add-on that owns port 9876
    (e.g. the Blender Lab "MCP" extension or an old "Blender MCP" add-on),
    then restart Blender.
-2. `Edit → Preferences → Get Extensions → ≡ (top right) → Install from Disk…`
-   → pick `zcode_mcp.zip`.
-3. Enable **ZCode MCP**. The bridge starts automatically.
-4. Verify: `/mcp` in ZCode shows Blender as `connected` (green dot in panel).
+2. Download `zcode_mcp.zip` from the [latest release](https://github.com/abyrvalg379/zcode-mcp/releases/latest).
+3. `Edit → Preferences → Get Extensions → ≡ (top right) → Install from Disk…`
+   → pick the zip.
+4. Enable **ZCode MCP**. The bridge starts automatically.
+5. Verify: `/mcp` in ZCode shows Blender as `connected` (green dot in panel).
 
 ## Preferences
 
