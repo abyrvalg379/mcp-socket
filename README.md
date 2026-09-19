@@ -4,6 +4,8 @@
 ZCode (or any `blender-mcp` 1.6.x-compatible client). Wire-compatible with the
 `blender-mcp.exe` protocol — no MCP config changes needed on the client side.
 
+*Документация на русском: [README.ru.md](README.ru.md)*
+
 Author: **Maksim Kovalev** · License: GPL-3.0-or-later
 
 > ⚠️ **Security note:** this add-on hosts a TCP server on `localhost` (port
@@ -77,40 +79,3 @@ zcode_mcp/
 - **1.1.0** — status icons, integration status stubs (4 integrations),
   idle-timeout 30 s, Test Connection, Last command, refresh timer
 - **1.0.0** — initial release: 5 core commands, TCP server, Start/Stop panel
-
----
-
-# ZCode MCP (Русская версия)
-
-**Расширение Blender 4.2+.** Лёгкий локальный TCP-мост между Blender и ZCode
-(или любым клиентом, совместимым с `blender-mcp` 1.6.x). Совместим по
-протоколу с `blender-mcp.exe` — конфиг MCP на стороне клиента менять не нужно.
-
-> ⚠️ **Безопасность:** аддон поднимает TCP-сервер на `localhost` (по умолчанию
-> порт 9876), команда `execute_code` исполняет **произвольный Python-код в
-> Blender** без аутентификации. Как и в оригинальном blender-mcp, это норма
-> для личной машины — но не открывайте порт наружу и не запускайте на общих
-> машинах.
-
-## Возможности
-
-- TCP-сервер на `localhost:9876`
-- 9 команд ядра: чтение сцены, произвольный bpy-код, скриншот вьюпорта,
-  handshake телеметрии, 4 статус-заглушки интеграций
-- Автостарт при включении аддона
-- Панель в N-меню: статус (зелёный/красный кружок), Test Connection,
-  Last command
-- Idle-timeout 30 с против зависших соединений
-- Иконки генерируются в памяти (без внешних файлов и Pillow)
-
-## Установка (Blender 4.2+)
-
-1. **Освободите порт 9876** — отключите другие MCP-аддоны, перезапустите Blender.
-2. `Edit → Preferences → Get Extensions → ≡ → Install from Disk…` → `zcode_mcp.zip`.
-3. Включите **ZCode MCP** — сервер стартует сам.
-4. Проверка: `/mcp` в ZCode → `connected`, зелёный кружок в панели.
-
-## Настройки (Preferences → Add-ons → ZCode MCP)
-
-- **Port** — порт моста (по умолчанию 9876)
-- **Allow richer anonymous telemetry** — по умолчанию выключено
