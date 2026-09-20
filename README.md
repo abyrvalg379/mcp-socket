@@ -107,7 +107,9 @@ mcp_socket/
 
 ## Changelog
 
-- **2.1.0** — **Undo Agent Work** button: the bridge drops an undo checkpoint
+- **2.1.1** — panel header reads **MCP Socket X.Y.Z** (dropped the redundant
+  word "Bridge")
+    - **2.1.0** — **Undo Agent Work** button: the bridge drops an undo checkpoint
   before the first code command of each agent session (a 10 s idle gap), so one
   click rolls back everything the agent changed in that session
     - **2.0.0** — renamed to **MCP Socket**: the bridge was never ZCode-specific —
