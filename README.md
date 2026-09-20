@@ -59,6 +59,21 @@ Author: **Maksim Kovalev** · License: GPL-3.0-or-later
 - 30 s idle-timeout against zombie connections
 - Status icons are generated as PNGs in memory — no external files, no Pillow
 
+## Connect from any MCP client
+
+The repo ships a thin stdio MCP server (`mcp_server/server.py`, stdlib only)
+that exposes every bridge handler as a native MCP tool:
+
+```json
+"mcp-socket": {
+  "command": "python",
+  "args": ["<repo>/mcp_server/server.py"]
+}
+```
+
+Any MCP-compatible app can connect — the bridge is client-agnostic.
+Multi-instance: launch a second entry with `--port 9877`.
+
 ## Installation (Blender 4.2+)
 
 1. **Free the port.** Disable any other add-on that owns port 9876
@@ -107,6 +122,10 @@ mcp_socket/
 
 ## Changelog
 
+- **2.3.0** — **phase 2: own MCP server** (`mcp_server/server.py`, stdlib-only
+  hand-rolled JSON-RPC over stdio, same pattern as the Maya bridge): every
+  bridge handler becomes a native MCP tool for any client — typed params, no
+  code-writing. Registered as a second config entry next to blender-mcp.
 - **2.2.0** — pipeline I/O per PROKLADKA rules: `export_fbx` (neutral FBX,
   meters, Y-up, presets maya/houdini/ue/neutral, per-call overrides echoed in
   the report), `import_fbx` (receiver rule: container EMPTY t=0 r=0 s=1,
