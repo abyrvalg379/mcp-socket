@@ -65,7 +65,8 @@ def _classify_status(snap: dict) -> tuple[str, int, bool]:
     no-client split would read as noise the other 99% of the time.
 
     icon_value comes from the previews module (generated green/red circle
-    PNGs). 0 means icons failed to load — draw() falls back to text-only.
+    PNGs — see icons.py for the lazy-submodule import gotcha). 0 means icons
+    failed to load — draw() falls back to text-only.
     """
     from . import icons
     if not snap or not snap.get("running"):

@@ -2,9 +2,16 @@
 """Custom colored status icons for ZCode_MCP.
 
 Blender ships no plain green/red dot icon (COLOR_GREEN/COLOR_RED are RGB-palette
-swatches that render with a white "G"/"R" letter). For a clean status light we
-generate small filled-circle PNGs in memory and register them via
-``bpy.utils.previews`` so the panel can use ``icon_value=``.
+swatches that render with a white "G"/"R" letter; COLLECTION_COLOR_* are
+rounded squares). For a clean round status light we generate small
+filled-circle PNGs in memory and register them via ``bpy.utils.previews`` so
+the panel can use ``icon_value=``.
+
+⚠ ``bpy.utils.previews`` is a LAZY SUBMODULE in every Blender version including
+5.2 — attribute access fails with "module 'bpy.utils' has no attribute
+'previews'" until something executes ``import bpy.utils.previews``. Other
+addons used to prime it before us, masking the bug; on a clean environment
+nothing does. The explicit import below is the whole fix.
 
 No external files ship with the addon — PNGs are generated into a temp dir on
 register and discarded on unregister.
@@ -79,6 +86,10 @@ def _make_dot_png(rgb: tuple, size: int = _DOT_SIZE) -> bytes:
 def register() -> None:
     global _previews, _cache_dir, GREEN, RED
     try:
+        # ⚠ the import IS the fix: bpy.utils.previews is a lazy submodule, the
+        # attribute does not exist (and never will) until this line runs.
+        import bpy.utils.previews  # noqa: F401
+
         _cache_dir = os.path.join(tempfile.gettempdir(), "zcode_mcp_icons")
         os.makedirs(_cache_dir, exist_ok=True)
 

@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id            = "zcode_mcp"
-version       = "1.2.1"
+version       = "1.2.2"
 name          = "ZCode MCP"
 tagline       = "Blender bridge for ZCode — wire-compatible with blender-mcp 1.6.x"
 maintainer    = "Maksim Kovalev"
