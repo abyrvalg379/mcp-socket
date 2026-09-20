@@ -49,6 +49,10 @@ Author: **Maksim Kovalev** · License: GPL-3.0-or-later
   port (9877, 9878, …) and registers itself in
   `%TEMP%/mcp_socket_instances/pid_<pid>.json` (heartbeat every ~10 s) — a
   second Blender instance runs its own bridge side by side with the first
+- **Undo Agent Work button** — the bridge drops an undo checkpoint before
+  the first code command of each agent session (10 s idle gap), so one click
+  rolls back everything the agent changed in that session (disable per
+  preference on huge scenes)
 - Auto-starts when the add-on is enabled
 - N-panel in the 3D viewport: status badge (green/red dot), Test Connection,
   Last command, actual bound port
@@ -103,7 +107,10 @@ mcp_socket/
 
 ## Changelog
 
-- **2.0.0** — renamed to **MCP Socket**: the bridge was never ZCode-specific —
+- **2.1.0** — **Undo Agent Work** button: the bridge drops an undo checkpoint
+  before the first code command of each agent session (a 10 s idle gap), so one
+  click rolls back everything the agent changed in that session
+    - **2.0.0** — renamed to **MCP Socket**: the bridge was never ZCode-specific —
   any `blender-mcp` 1.6.x-compatible client works. Module id `mcp_socket`,
   panel **MCP Socket**. Uninstall the old "ZCode MCP" extension before
   installing this one; port and protocol unchanged.

@@ -111,13 +111,18 @@ def remove_instance_file() -> None:
 
 
 def heartbeat() -> None:
-    """Refresh the registry file if this instance's server is running.
+    """Refresh the registry file + heal the console tee if it was dropped.
 
     Called from the UI refresh timer — keep it cheap and silent.
     """
     srv = getattr(bpy.types, "mcp_socket_server", None)
     if srv is not None and getattr(srv, "running", False):
         write_instance_file(srv)
+    try:
+        from . import logcap
+        logcap.ensure_installed()
+    except Exception:  # noqa: BLE001 — self-heal must never kill the timer
+        pass
 
 
 def list_instances(stale_seconds: float = 15.0) -> Dict[str, Any]:

@@ -58,6 +58,16 @@ class MCPSocket_AddonPreferences(AddonPreferences):
         ),
         default=True,
     )
+    undo_checkpoint: BoolProperty(
+        name="Undo checkpoint per agent session",
+        description=(
+            "Before the first code-execution command after a 10 s idle gap, "
+            "push an undo checkpoint. The panel's Undo Agent Work button (or "
+            "one Ctrl+Z) then rolls back everything the agent changed in that "
+            "session. Disable on huge scenes if the checkpoint push is slow."
+        ),
+        default=True,
+    )
 
 
 # ── helpers ──────────────────────────────────────────────────────────────
@@ -208,6 +218,23 @@ class MCPSOCKET_OT_log_clear(Operator):
         return {"FINISHED"}
 
 
+class MCPSOCKET_OT_undo(Operator):
+    bl_idname = "mcp_socket.undo"
+    bl_label = "Undo Agent Work"
+    bl_description = ("Undo one step. The bridge drops an undo checkpoint "
+                      "before each agent session (a code command after a 10 s "
+                      "gap), so one click rolls back everything the agent "
+                      "changed in that session")
+
+    def execute(self, context):
+        try:
+            bpy.ops.ed.undo()
+            self.report({"INFO"}, "Undone")
+        except Exception as exc:  # noqa: BLE001
+            self.report({"WARNING"}, f"Nothing to undo: {exc}")
+        return {"FINISHED"}
+
+
 # ── sidebar panel ────────────────────────────────────────────────────────
 
 class MCPSOCKET_PT_panel(Panel):
@@ -266,6 +293,7 @@ class MCPSOCKET_PT_panel(Panel):
             col.operator("mcp_socket.test", icon="CONSOLE")
         else:
             col.operator("mcp_socket.start", icon="PLAY")
+        col.operator("mcp_socket.undo", icon="LOOP_BACK")
 
         # ── Port (live value when running — may be offset in a second
         # instance; editable in Preferences) ────────────────────────────────
@@ -346,6 +374,7 @@ classes = (
     MCPSOCKET_OT_test,
     MCPSOCKET_OT_log_save,
     MCPSOCKET_OT_log_clear,
+    MCPSOCKET_OT_undo,
     MCPSOCKET_PT_panel,
     MCPSOCKET_PT_log,
 )

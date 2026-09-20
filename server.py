@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import socket
+import sys
 import threading
 import time
 import traceback
@@ -58,6 +59,13 @@ _RECV_CHUNK = 8192
 # How long a single main-thread handler may block before we give up on it.
 # (bpy.app.timers have no hard deadline; this is a soft watchdog for logging.)
 _HANDLER_WARN_SECONDS = 30.0
+
+# Idle gap that separates two agent "sessions". Before the first mutating
+# command after such a gap the bridge drops an undo checkpoint, so the panel's
+# Undo button (or one Ctrl+Z) reverts everything the agent changed in that
+# session. Read-only queries never trigger checkpoints.
+_SESSION_GAP_SECONDS = 10.0
+_UNDO_GUARDED_TYPES = {"execute_code"}
 
 # Idle read timeout per client connection. blender-mcp.exe opens a fresh
 # socket per command and closes it after the reply, so a socket that has been
@@ -265,6 +273,8 @@ class MCPSocketServer:
                 ),
             }
 
+        self._drop_undo_checkpoint(cmd_type)
+
         started = time.monotonic()
         try:
             result = handler(**params) if isinstance(params, dict) else handler()
@@ -275,6 +285,48 @@ class MCPSocketServer:
         if elapsed > _HANDLER_WARN_SECONDS:
             print(f"{_TAG} slow command {cmd_type!r}: {elapsed:.1f}s")
         return {"status": "success", "result": result}
+
+    def _undo_checkpoint_enabled(self) -> bool:
+        """Live-read the preference so toggling it doesn't need a restart.
+
+        Extension addons live in preferences under their full
+        ``bl_ext.<repo>.<id>`` key; fall back to the bare id defensively.
+        """
+        for key in ("bl_ext.user_default.mcp_socket", "mcp_socket"):
+            try:
+                addon = bpy.context.preferences.addons.get(key)
+                if addon is not None:
+                    return bool(addon.preferences.undo_checkpoint)
+            except (AttributeError, KeyError):
+                continue
+        return True
+
+    def _drop_undo_checkpoint(self, cmd_type: str) -> None:
+        """Push an undo checkpoint before the first command of an agent session.
+
+        Script-level changes are invisible to Blender's undo stack until the
+        next push; dropping a checkpoint right before the mutating command
+        snapshots the pre-session state, so one undo returns everything the
+        agent did after it. Runs on the main thread (we are inside _execute).
+
+        ⚠ Prints go to ``sys.stderr`` on purpose: the stdout tee can be
+        re-established mid-execution by an addon reinstall (redirect_stdout
+        restores the tee captured at exec start), while the stderr tee stays
+        stable — and the ring self-heals from the heartbeat either way.
+        """
+        if cmd_type not in _UNDO_GUARDED_TYPES or not self._undo_checkpoint_enabled():
+            return
+        if self._last_command_ts:
+            gap = time.monotonic() - self._last_command_ts
+        else:
+            gap = _SESSION_GAP_SECONDS + 1.0  # first command of the process
+        if gap <= _SESSION_GAP_SECONDS:
+            return  # same session — the earlier checkpoint still covers it
+        try:
+            bpy.ops.ed.undo_push(message="MCP Socket: agent session checkpoint")
+            print(f"{_TAG} undo checkpoint (session gap {gap:.0f}s)", file=sys.stderr)
+        except Exception as exc:  # noqa: BLE001 — never block the command
+            print(f"{_TAG} undo checkpoint failed: {exc}", file=sys.stderr)
 
     # ── observability (thread-safe) ───────────────────────────────────────
 

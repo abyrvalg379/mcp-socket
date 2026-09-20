@@ -138,3 +138,25 @@ def uninstall() -> None:
         sys.stderr = _orig_stderr
     _installed = False
     _orig_stdout = _orig_stderr = None
+
+
+def ensure_installed() -> None:
+    """Re-assert the tees if something replaced them.
+
+    ⚠ Needed because an addon reinstall performed THROUGH the bridge breaks
+    the stdout tee: uninstall of the old code restores the real console, the
+    new register installs a fresh tee, and then ``redirect_stdout`` inside the
+    still-running execute_code restores the OLD tee captured at exec start —
+    dropping the new one. The heartbeat calls this every ~10 s, so the ring
+    self-heals within one tick (same watchdog pattern as the TOCHKA keymap
+    sentinel).
+    """
+    global _installed, _orig_stdout, _orig_stderr
+    if not _installed:
+        return
+    if isinstance(sys.stdout, _Tee) and isinstance(sys.stderr, _Tee):
+        return
+    # Drop whatever stale state we hold and re-wrap the current streams.
+    _installed = False
+    _orig_stdout = _orig_stderr = None
+    install()
