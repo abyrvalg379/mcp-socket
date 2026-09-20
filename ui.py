@@ -218,6 +218,68 @@ class MCPSOCKET_OT_log_clear(Operator):
         return {"FINISHED"}
 
 
+def _preset_items(self, context):
+    from . import presets as _presets
+    return [(name, name, _presets.PRESETS[name]["note"])
+            for name in sorted(_presets.PRESETS)]
+
+
+class MCPSOCKET_OT_export_fbx(Operator):
+    bl_idname = "mcp_socket.export_fbx"
+    bl_label = "Export FBX"
+    bl_description = ("Export selected objects to FBX with a pipeline preset "
+                      "(children included, modifiers baked)")
+
+    filepath: StringProperty(name="File", subtype="FILE_PATH",
+                             default="mcp_export.fbx")
+    preset: EnumProperty(name="Preset", items=_preset_items, default="maya")
+
+    def draw(self, context):
+        self.layout.prop(self, "preset")
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        from . import pipeline
+        try:
+            rep = pipeline.export_fbx(self.filepath, preset=self.preset,
+                                      scope="selected")
+        except (ValueError, RuntimeError) as exc:
+            self.report({"ERROR"}, str(exc))
+            return {"CANCELLED"}
+        context.window_manager.clipboard = rep["filepath"]
+        self.report({"INFO"}, f"Exported {len(rep['objects'])} objects "
+                              f"(preset {rep['preset']})")
+        return {"FINISHED"}
+
+
+class MCPSOCKET_OT_import_fbx(Operator):
+    bl_idname = "mcp_socket.import_fbx"
+    bl_label = "Import FBX"
+    bl_description = ("Import an FBX per the receiver rule: container EMPTY "
+                      "t=0 r=0 s=1, oversized meshes reported")
+
+    filepath: StringProperty(name="File", subtype="FILE_PATH")
+    filter_glob: StringProperty(default="*.fbx", options={"HIDDEN"})
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        from . import pipeline
+        try:
+            rep = pipeline.import_fbx(self.filepath, container=True)
+        except (ValueError, RuntimeError) as exc:
+            self.report({"ERROR"}, str(exc))
+            return {"CANCELLED"}
+        self.report({"INFO"}, f"Imported {rep['objects_count']} objects "
+                              f"into '{rep['container']}'")
+        return {"FINISHED"}
+
+
 class MCPSOCKET_OT_undo(Operator):
     bl_idname = "mcp_socket.undo"
     bl_label = "Undo Agent Work"
@@ -307,6 +369,27 @@ class MCPSOCKET_PT_panel(Panel):
         row.label(text=f"Port: {port_val}", icon="SCRIPT")
 
 
+# ── pipeline sub-panel ───────────────────────────────────────────────────
+
+class MCPSOCKET_PT_pipeline(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "MCP Socket"
+    bl_parent_id = "MCPSOCKET_PT_panel"
+    bl_label = "Pipeline"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column(align=True)
+        col.scale_y = 1.2
+        col.operator("mcp_socket.export_fbx", icon="EXPORT")
+        col.operator("mcp_socket.import_fbx", icon="IMPORT")
+        row = layout.row()
+        row.active = False
+        row.label(text="Neutral FBX: meters, Y-up", icon="INFO")
+
+
 # ── console log sub-panel ────────────────────────────────────────────────
 
 class MCPSOCKET_PT_log(Panel):
@@ -375,7 +458,10 @@ classes = (
     MCPSOCKET_OT_log_save,
     MCPSOCKET_OT_log_clear,
     MCPSOCKET_OT_undo,
+    MCPSOCKET_OT_export_fbx,
+    MCPSOCKET_OT_import_fbx,
     MCPSOCKET_PT_panel,
+    MCPSOCKET_PT_pipeline,
     MCPSOCKET_PT_log,
 )
 

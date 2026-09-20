@@ -19,7 +19,7 @@ from typing import Any, Dict, List
 
 import bpy
 
-from . import logcap, queries
+from . import logcap, pipeline, queries
 
 # Cap the number of objects reported by get_scene_info to keep responses small.
 # The full list is intentionally truncated — MCP clients call get_object_info
@@ -207,4 +207,8 @@ HANDLERS: Dict[str, Any] = {
     "get_material_info": queries.get_material_info,
     "get_images_report": queries.get_images_report,
     "list_instances": queries.list_instances,
+    # Bridge extensions (v2.2.0): pipeline I/O per PROKLADKA rules.
+    "export_fbx": pipeline.export_fbx,
+    "import_fbx": pipeline.import_fbx,
+    "list_presets": pipeline.list_presets,
 }
