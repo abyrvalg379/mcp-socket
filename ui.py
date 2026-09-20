@@ -10,7 +10,7 @@ client connections without the user clicking anything.
 from __future__ import annotations
 
 import bpy
-from bpy.props import BoolProperty, IntProperty, StringProperty
+from bpy.props import BoolProperty, EnumProperty, IntProperty, StringProperty
 from bpy.types import AddonPreferences, Operator, Panel
 
 from .queries import bridge_version
@@ -280,6 +280,46 @@ class MCPSOCKET_OT_import_fbx(Operator):
         return {"FINISHED"}
 
 
+class MCPSOCKET_OT_render(Operator):
+    bl_idname = "mcp_socket.render"
+    bl_label = "Render Offscreen"
+    bl_description = ("Render to a file without opening the render window. "
+                      "Viewport: fast OpenGL render of the current 3D view. "
+                      "Camera: scene engine from the scene camera (Cycles "
+                      "can be slow)")
+
+    filepath: StringProperty(name="File", subtype="FILE_PATH",
+                             default="mcp_render.png")
+    mode: EnumProperty(
+        name="Mode",
+        items=(
+            ("viewport", "Viewport", "OpenGL render of the current 3D view (fast)"),
+            ("camera", "Camera", "Scene engine render from the scene camera"),
+        ),
+        default="viewport",
+    )
+
+    def draw(self, context):
+        self.layout.prop(self, "mode", text="")
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        from . import render
+        try:
+            rep = render.render_offscreen(self.filepath, mode=self.mode)
+        except (ValueError, RuntimeError) as exc:
+            self.report({"ERROR"}, str(exc))
+            return {"CANCELLED"}
+        context.window_manager.clipboard = rep["filepath"]
+        self.report({"INFO"},
+                    f"Rendered {rep['resolution']['x']}x{rep['resolution']['y']} "
+                    f"({rep['engine']}) in {rep['elapsed_s']} s")
+        return {"FINISHED"}
+
+
 class MCPSOCKET_OT_undo(Operator):
     bl_idname = "mcp_socket.undo"
     bl_label = "Undo Agent Work"
@@ -390,6 +430,26 @@ class MCPSOCKET_PT_pipeline(Panel):
         row.label(text="Neutral FBX: meters, Y-up", icon="INFO")
 
 
+# ── render sub-panel ─────────────────────────────────────────────────────
+
+class MCPSOCKET_PT_render(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "MCP Socket"
+    bl_parent_id = "MCPSOCKET_PT_panel"
+    bl_label = "Render"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column(align=True)
+        col.scale_y = 1.2
+        col.operator("mcp_socket.render", icon="RENDER_STILL")
+        row = layout.row()
+        row.active = False
+        row.label(text="Viewport: OpenGL, no window", icon="INFO")
+
+
 # ── console log sub-panel ────────────────────────────────────────────────
 
 class MCPSOCKET_PT_log(Panel):
@@ -460,8 +520,10 @@ classes = (
     MCPSOCKET_OT_undo,
     MCPSOCKET_OT_export_fbx,
     MCPSOCKET_OT_import_fbx,
+    MCPSOCKET_OT_render,
     MCPSOCKET_PT_panel,
     MCPSOCKET_PT_pipeline,
+    MCPSOCKET_PT_render,
     MCPSOCKET_PT_log,
 )
 

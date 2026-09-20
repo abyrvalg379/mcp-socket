@@ -19,7 +19,7 @@ from typing import Any, Dict, List
 
 import bpy
 
-from . import logcap, pipeline, queries
+from . import logcap, pipeline, queries, render
 
 # Cap the number of objects reported by get_scene_info to keep responses small.
 # The full list is intentionally truncated — MCP clients call get_object_info
@@ -211,4 +211,6 @@ HANDLERS: Dict[str, Any] = {
     "export_fbx": pipeline.export_fbx,
     "import_fbx": pipeline.import_fbx,
     "list_presets": pipeline.list_presets,
+    # Bridge extensions (v2.4.0): offscreen render.
+    "render_offscreen": render.render_offscreen,
 }

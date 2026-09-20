@@ -45,6 +45,15 @@ Author: **Maksim Kovalev** · License: GPL-3.0-or-later
     on-disk state
   - `get_images_report` — all images: paths, colorspace, packed, missing files
   - `list_instances` — live bridge instances on this machine (multi-instance)
+- **Pipeline I/O** (v2.2.0) — `export_fbx` (neutral FBX: meters, Y-up, binary,
+  modifiers baked; presets maya/houdini/ue/neutral; per-call overrides echoed
+  in the report), `import_fbx` (receiver rule: container EMPTY t=0 r=0 s=1,
+  oversized meshes reported, never rescaled), `list_presets`
+- **Offscreen render** (v2.4.0) — `render_offscreen`: mode `viewport` (fast
+  OpenGL render of the current 3D view — no render window, no overlays/gizmos)
+  or `camera` (full scene engine from the scene camera; Cycles can be slow).
+  Render settings are saved and always restored, 5.2 `media_type` quirks
+  handled
 - **Multi-instance:** if the preferred port is busy, the bridge binds the next
   port (9877, 9878, …) and registers itself in
   `%TEMP%/mcp_socket_instances/pid_<pid>.json` (heartbeat every ~10 s) — a
@@ -90,6 +99,8 @@ Multi-instance: launch a second entry with `--port 9877`.
 - **Port** — TCP port of the bridge (default 9876)
 - **Auto port offset for second instance** — if the port is busy, try the next
   10 ports instead of failing (on by default)
+- **Undo checkpoint per agent session** — drop an undo checkpoint before the
+  first code command after a 10 s idle gap (on by default)
 - **Allow richer anonymous telemetry** — off by default; if on, the bridge
   answers `consent=true` to blender-mcp's telemetry check
 
@@ -115,13 +126,24 @@ mcp_socket/
 ├── handlers.py             command registry (core + bridge extensions)
 ├── queries.py              structured scene queries + instance registry
 ├── logcap.py               console ring buffer (Python-level stdout/stderr)
+├── pipeline.py             FBX export/import per PROKLADKA rules + presets
+├── render.py               offscreen render (viewport OpenGL / camera)
+├── presets.py              export preset contracts (PROKLADKA)
 ├── ui.py                   N-panel + preferences + operators + refresh timer
 ├── icons.py                in-memory PNG status icons (green/red dot)
-└── reload_addon.py         hot reload snippet
+├── reload_addon.py         hot reload snippet
+└── mcp_server/
+    └── server.py           thin stdio MCP server (stdlib-only JSON-RPC)
 ```
 
 ## Changelog
 
+- **2.4.0** — **offscreen render** (`render_offscreen`): mode `viewport` (fast
+  OpenGL render of the current 3D view) or `camera` (full scene engine from
+  the scene camera); output path/format from the file extension, resolution
+  and percent overridable, render settings always restored (Blender 5.2
+  `media_type` VIDEO quirk handled). Render sub-panel with an offscreen
+  button; 16th native MCP tool
 - **2.3.0** — **phase 2: own MCP server** (`mcp_server/server.py`, stdlib-only
   hand-rolled JSON-RPC over stdio, same pattern as the Maya bridge): every
   bridge handler becomes a native MCP tool for any client — typed params, no

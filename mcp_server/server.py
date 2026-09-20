@@ -101,6 +101,13 @@ TOOLS = [
      "params": ["filepath", "max_size", "format"],
      "description": ("Capture the active 3D viewport to a PNG on disk; returns the "
                      "filepath (read the file to view it).")},
+    {"name": "render_offscreen", "bridge": "render_offscreen",
+     "params": ["filepath", "mode", "percent", "width", "height"],
+     "description": ("Render to a file without opening the render window: mode "
+                     "'viewport' = fast OpenGL render of the current 3D view (no "
+                     "overlays/gizmos); mode 'camera' = full scene-engine render "
+                     "from the scene camera (Cycles can be slow; timeout 180 s). "
+                     "Returns the filepath, engine, resolution, elapsed time.")},
     {"name": "execute_code", "bridge": "execute_code", "params": ["code"],
      "description": ("Escape hatch: run arbitrary bpy Python code in Blender. "
                      "Prefer the typed tools above.")},
@@ -113,7 +120,8 @@ def _tool_schema(tool: dict) -> dict:
              "scope": "string", "collection_name": "string", "name": "string",
              "filter": "string", "stream": "string", "code": "string",
              "format": "string"}
-    numbers = {"last_n": "integer", "max_size": "integer"}
+    numbers = {"last_n": "integer", "max_size": "integer", "percent": "integer",
+               "width": "integer", "height": "integer"}
     booleans = {"container": "boolean"}
     numbers.update({"global_scale": "number"})
     for param in tool["params"]:
@@ -127,6 +135,11 @@ def _tool_schema(tool: dict) -> dict:
         elif param == "stream":
             props[param] = {"type": "string",
                             "description": '"stdout" | "stderr" | "" for both'}
+        elif param == "mode":
+            props[param] = {"type": "string",
+                            "description": "'viewport' (OpenGL, fast) or "
+                                           "'camera' (scene engine)",
+                            "enum": ["viewport", "camera"]}
         elif param == "scope":
             props[param] = {"type": "string",
                             "description": '"selected" | "collection" | "scene"',
@@ -184,7 +197,7 @@ def _handle(msg: dict, port: int) -> None:
             "protocolVersion": msg.get("params", {}).get("protocolVersion",
                                                          "2025-11-25"),
             "capabilities": {"tools": {"listChanged": False}},
-            "serverInfo": {"name": "mcp-socket", "version": "2.3.0"},
+            "serverInfo": {"name": "mcp-socket", "version": "2.4.0"},
         })
     elif method == "notifications/initialized":
         pass

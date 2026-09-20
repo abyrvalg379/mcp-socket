@@ -17,10 +17,11 @@ if "bpy" in locals():
     # without restarting Blender. Mirrors the STUKACH reload pattern.
     import importlib
     import sys as _sys
-    from . import handlers, icons, logcap, pipeline, presets, queries, server, ui
+    from . import handlers, icons, logcap, pipeline, presets, queries, render, server, ui
     for _key, _mod in (
         ("mcp_socket.presets", presets),
         ("mcp_socket.pipeline", pipeline),
+        ("mcp_socket.render", render),
         ("mcp_socket.icons", icons),
         ("mcp_socket.logcap", logcap),
         ("mcp_socket.queries", queries),
