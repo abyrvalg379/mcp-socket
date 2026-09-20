@@ -13,8 +13,14 @@ import bpy
 from bpy.props import BoolProperty, IntProperty, StringProperty
 from bpy.types import AddonPreferences, Operator, Panel
 
+from .queries import bridge_version
+
 _TAG = "[ZCode_MCP]"
 _DEFAULT_PORT = 9876
+
+# Panel header shows the version (product rule: every addon's N-panel header
+# carries its version). Read from blender_manifest.toml — single source.
+_VERSION_STR = bridge_version()
 
 # Refresh cadence for the status badge / counters (seconds). Light enough to
 # feel live, not so fast it spams tag_redraw.
@@ -41,6 +47,16 @@ class ZCodeMCP_AddonPreferences(AddonPreferences):
             "Off by default — only minimal usage data is collected by blender-mcp."
         ),
         default=False,
+    )
+    auto_port_offset: BoolProperty(
+        name="Auto port offset for second instance",
+        description=(
+            "If the preferred port is busy (e.g. another Blender instance "
+            "already runs a bridge), try the next 10 ports instead of failing. "
+            "Clients discover the actual port via the instance registry "
+            "(list_instances / get_bridge_info)."
+        ),
+        default=True,
     )
 
 
@@ -97,10 +113,12 @@ class ZCODEMCP_OT_start(Operator):
         from . import server as _server_mod
         prefs = _prefs(context)
         port = prefs.port if prefs else _DEFAULT_PORT
+        auto_offset = bool(prefs.auto_port_offset) if prefs else True
 
         current = _server()
         if current is None:
-            bpy.types.zcode_mcp_server = _server_mod.ZCodeMCPServer(port=port)
+            bpy.types.zcode_mcp_server = _server_mod.ZCodeMCPServer(
+                port=port, auto_offset=auto_offset)
         ok = bpy.types.zcode_mcp_server.start()
         context.scene.zcode_mcp_running = bpy.types.zcode_mcp_server.running
         if ok:
@@ -151,13 +169,52 @@ class ZCODEMCP_OT_test(Operator):
         return {"FINISHED"}
 
 
+class ZCODEMCP_OT_log_save(Operator):
+    bl_idname = "zcode_mcp.log_save"
+    bl_label = "Save Log"
+    bl_description = ("Dump the console ring buffer to a timestamped file in "
+                      "%TEMP% (path lands in the clipboard)")
+
+    def execute(self, context):
+        import os
+        import tempfile
+        import time as _time
+        from . import logcap
+        data = logcap.get_console_log(last_n=logcap.MAX_LINES)
+        out_dir = os.path.join(tempfile.gettempdir(), "zcode_mcp")
+        os.makedirs(out_dir, exist_ok=True)
+        path = os.path.join(
+            out_dir, f"console_{_time.strftime('%Y%m%d_%H%M%S')}.log")
+        with open(path, "w", encoding="utf-8") as fh:
+            for entry in data["lines"]:
+                ts = entry.get("ts")
+                stamp = (_time.strftime("%H:%M:%S", _time.localtime(ts))
+                         if ts else "--:--:--")
+                fh.write(f"[{stamp}][{entry['stream']}] {entry['text']}\n")
+        context.window_manager.clipboard = path
+        self.report({"INFO"}, f"Saved: {path}")
+        return {"FINISHED"}
+
+
+class ZCODEMCP_OT_log_clear(Operator):
+    bl_idname = "zcode_mcp.log_clear"
+    bl_label = "Clear"
+    bl_description = "Clear the console ring buffer"
+
+    def execute(self, context):
+        from . import logcap
+        logcap.clear_console_log()
+        self.report({"INFO"}, "Console log cleared")
+        return {"FINISHED"}
+
+
 # ── sidebar panel ────────────────────────────────────────────────────────
 
 class ZCODEMCP_PT_panel(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "ZCode MCP"
-    bl_label = "ZCode MCP Bridge"
+    bl_label = f"ZCode MCP Bridge {_VERSION_STR}"
 
     def draw(self, context):
         layout = self.layout
@@ -210,26 +267,68 @@ class ZCODEMCP_PT_panel(Panel):
         else:
             col.operator("zcode_mcp.start", icon="PLAY")
 
-        # ── Port (read from prefs; editable in Preferences) ───────────────
+        # ── Port (live value when running — may be offset in a second
+        # instance; editable in Preferences) ────────────────────────────────
         prefs = _prefs(context)
-        port_val = prefs.port if prefs else _DEFAULT_PORT
+        if snap.get("running"):
+            port_val = snap.get("port")
+        else:
+            port_val = prefs.port if prefs else _DEFAULT_PORT
         row = layout.row(align=True)
         row.active = False
         row.label(text=f"Port: {port_val}", icon="SCRIPT")
 
 
+# ── console log sub-panel ────────────────────────────────────────────────
+
+class ZCODEMCP_PT_log(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "ZCode MCP"
+    bl_parent_id = "ZCODEMCP_PT_panel"
+    bl_label = "Console Log"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        layout = self.layout
+        from . import logcap
+        lines = [e["text"] for e in logcap.get_console_log(last_n=8)["lines"]]
+        if not lines:
+            row = layout.row()
+            row.active = False
+            row.label(text="(empty)")
+        else:
+            col = layout.column(align=True)
+            col.scale_y = 0.85
+            for text in lines:
+                col.label(text=text[:64])
+        row = layout.row(align=True)
+        row.operator("zcode_mcp.log_save", text="Save to File", icon="EXPORT")
+        row.operator("zcode_mcp.log_clear", text="", icon="X")
+
+
 # ── refresh timer ────────────────────────────────────────────────────────
 
 _refresh_timer = None
+_hb_tick = 0
 
 
 def _refresh_panel():
     """Periodically nudge the viewport UI to redraw so the badge stays live.
 
     Connection state changes happen on background threads; without this the
-    panel only repaints on user interaction. Returns None so the timer keeps
-    firing at _REFRESH_INTERVAL.
+    panel only repaints on user interaction. Every ~7th tick (~10s) it also
+    refreshes the multi-instance registry heartbeat. Returns None so the timer
+    keeps firing at _REFRESH_INTERVAL.
     """
+    global _hb_tick
+    _hb_tick += 1
+    if _hb_tick % 7 == 0:
+        try:
+            from . import queries
+            queries.heartbeat()
+        except Exception:  # noqa: BLE001 — heartbeat must never kill the timer
+            pass
     # Force a redraw of all 3D viewports so the badge/counters update.
     for window in bpy.context.window_manager.windows:
         for area in window.screen.areas:
@@ -245,7 +344,10 @@ classes = (
     ZCODEMCP_OT_start,
     ZCODEMCP_OT_stop,
     ZCODEMCP_OT_test,
+    ZCODEMCP_OT_log_save,
+    ZCODEMCP_OT_log_clear,
     ZCODEMCP_PT_panel,
+    ZCODEMCP_PT_log,
 )
 
 

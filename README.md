@@ -27,9 +27,31 @@ Author: **Maksim Kovalev** · License: GPL-3.0-or-later
   - `get_polyhaven_status` / `get_hyper3d_status` / `get_sketchfab_status` /
     `get_hunyuan3d_status` — stubs answering `enabled: false`
     (blender-mcp drops the connection without them)
+- **Bridge extension commands** (v1.3.0) — reachable from any client via its
+  code-execution escape hatch:
+  ```python
+  from bl_ext.user_default.zcode_mcp import handlers
+  handlers.HANDLERS["get_console_log"](last_n=100)
+  ```
+  - `get_console_log` / `clear_console_log` — ring buffer (500 lines) of
+    Python-level console output: addon prints, tracebacks, logging. C-level
+    console (register warnings, operator reports) is not visible to Python.
+  - `get_bridge_info` — one-call identity card: bridge/Blender versions, pid,
+    scene, filepath, counts, actual port
+  - `get_hierarchy` — collection tree with objects and visibility flags
+  - `get_object_data` — full read-only object dossier (modifiers, constraints,
+    material slots, mesh stats, custom props, action)
+  - `get_material_info` — nodes summary, image textures with colorspace and
+    on-disk state
+  - `get_images_report` — all images: paths, colorspace, packed, missing files
+  - `list_instances` — live bridge instances on this machine (multi-instance)
+- **Multi-instance:** if the preferred port is busy, the bridge binds the next
+  port (9877, 9878, …) and registers itself in
+  `%TEMP%/zcode_mcp_instances/pid_<pid>.json` (heartbeat every ~10 s) — a
+  second Blender instance runs its own bridge side by side with the first
 - Auto-starts when the add-on is enabled
 - N-panel in the 3D viewport: status badge (green/red dot), Test Connection,
-  Last command
+  Last command, actual bound port
 - 30 s idle-timeout against zombie connections
 - Status icons are generated as PNGs in memory — no external files, no Pillow
 
@@ -47,6 +69,8 @@ Author: **Maksim Kovalev** · License: GPL-3.0-or-later
 ## Preferences
 
 - **Port** — TCP port of the bridge (default 9876)
+- **Auto port offset for second instance** — if the port is busy, try the next
+  10 ports instead of failing (on by default)
 - **Allow richer anonymous telemetry** — off by default; if on, the bridge
   answers `consent=true` to blender-mcp's telemetry check
 
@@ -68,8 +92,10 @@ handlers.py → {"status": "success", "result": ...} | {"status": "error", ...}
 zcode_mcp/
 ├── blender_manifest.toml   extension metadata (Blender 4.2+)
 ├── __init__.py             register/unregister + auto-start + hot-reload guard
-├── server.py               TCP 9876, threads, main-thread dispatch
-├── handlers.py             9 core commands
+├── server.py               TCP 9876, port offset, threads, main-thread dispatch
+├── handlers.py             command registry (core + bridge extensions)
+├── queries.py              structured scene queries + instance registry
+├── logcap.py               console ring buffer (Python-level stdout/stderr)
 ├── ui.py                   N-panel + preferences + operators + refresh timer
 ├── icons.py                in-memory PNG status icons (green/red dot)
 └── reload_addon.py         hot reload snippet
@@ -77,6 +103,13 @@ zcode_mcp/
 
 ## Changelog
 
+- **1.3.0** — bridge extension commands (`get_console_log`, `get_bridge_info`,
+  `get_hierarchy`, `get_object_data`, `get_material_info`, `get_images_report`,
+  `list_instances`), console ring buffer, multi-instance support (port offset +
+  instance registry with heartbeat), live port in the panel
+- **1.2.2** — round status icons restored: `bpy.utils.previews` is a lazy
+  submodule, the missing explicit import was the root cause
+- **1.2.1** — manifest fix for Blender 5.2.2 (flat `website` string)
 - **1.2.0** — extension-only build (manifest is the single source of metadata,
   legacy `bl_info` removed)
 - **1.1.0** — status icons, integration status stubs (4 integrations),

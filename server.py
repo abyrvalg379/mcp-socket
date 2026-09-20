@@ -33,7 +33,7 @@ from typing import Any, Dict, Optional
 
 import bpy
 
-from . import handlers
+from . import handlers, queries
 
 _TAG = "[ZCode_MCP]"
 
@@ -41,6 +41,12 @@ _TAG = "[ZCode_MCP]"
 # ZCode MCP config (no path/port changes) keeps working.
 _DEFAULT_HOST = "localhost"
 _DEFAULT_PORT = 9876
+
+# How many ports past the preferred one to try when it is busy. Lets a second
+# Blender instance (9877, 9878, ...) run its own bridge side by side with the
+# first; clients discover the actual port via the instance registry
+# (queries.list_instances / get_bridge_info).
+_PORT_OFFSETS = 10
 
 # SO_REUSEADDR + accept() timeout so the server loop can notice self.running
 # flipping to False within this many seconds.
@@ -63,9 +69,12 @@ _CLIENT_IDLE_TIMEOUT = 30.0
 class ZCodeMCPServer:
     """Single-connection TCP server bridging to Blender's main thread."""
 
-    def __init__(self, host: str = _DEFAULT_HOST, port: int = _DEFAULT_PORT) -> None:
+    def __init__(self, host: str = _DEFAULT_HOST, port: int = _DEFAULT_PORT,
+                 auto_offset: bool = True) -> None:
         self.host = host
         self.port = port
+        self.preferred_port = port
+        self.auto_offset = auto_offset
         self.running = False
         self.socket: Optional[socket.socket] = None
         self._thread: Optional[threading.Thread] = None
@@ -91,25 +100,44 @@ class ZCodeMCPServer:
             print(f"{_TAG} server already running on {self.host}:{self.port}")
             return True
 
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            sock.bind((self.host, self.port))
-            sock.listen(1)
-            sock.settimeout(_ACCEPT_TIMEOUT)
-        except OSError as exc:
-            # Most common: EADDRINUSE because the old blender-mcp addon still
-            # holds the port. The user must remove/disable it first.
-            print(f"{_TAG} failed to bind {self.host}:{self.port}: {exc}")
+        candidates = [self.port + i for i in range(_PORT_OFFSETS + 1)] \
+            if self.auto_offset else [self.port]
+        sock: Optional[socket.socket] = None
+        last_error: Optional[OSError] = None
+        for candidate in candidates:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                s.bind((self.host, candidate))
+            except OSError as exc:
+                s.close()
+                last_error = exc
+                continue
+            sock = s
+            self.port = candidate
+            break
+
+        if sock is None:
+            # Most common: EADDRINUSE because an old bridge/addon still holds
+            # every candidate port. The user must free it first.
+            print(f"{_TAG} failed to bind {self.host}:{candidates[0]}"
+                  f"-{candidates[-1]}: {last_error}")
             print(f"{_TAG} another addon may already own this port "
                   "(remove the old 'Blender MCP' addon and restart Blender)")
             return False
 
+        if self.port != self.preferred_port:
+            print(f"{_TAG} port {self.preferred_port} busy — "
+                  f"bound to {self.port} instead (second instance?)")
+
+        sock.listen(1)
+        sock.settimeout(_ACCEPT_TIMEOUT)
         self.socket = sock
         self.running = True
         self._thread = threading.Thread(target=self._accept_loop, daemon=True)
         self._thread.start()
         print(f"{_TAG} server started on {self.host}:{self.port}")
+        queries.write_instance_file(self)
         return True
 
     def stop(self) -> None:
@@ -123,6 +151,7 @@ class ZCodeMCPServer:
         if self._thread is not None and self._thread.is_alive():
             self._thread.join(timeout=2.0)
         self._thread = None
+        queries.remove_instance_file()
         print(f"{_TAG} server stopped")
 
     # ── accept loop (background thread) ───────────────────────────────────

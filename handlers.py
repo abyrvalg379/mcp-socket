@@ -19,6 +19,8 @@ from typing import Any, Dict, List
 
 import bpy
 
+from . import logcap, queries
+
 # Cap the number of objects reported by get_scene_info to keep responses small.
 # The full list is intentionally truncated — MCP clients call get_object_info
 # per-name when they need detail.
@@ -181,6 +183,10 @@ def _world_aabb(obj) -> List[List[float]]:
 # probes MUST be present because blender-mcp 1.6.x uses them as a connection
 # health-check on every tool call — answering them with {"enabled": False}
 # keeps the connection alive without pulling in those integrations' code.
+# Bridge-extension commands (console log, structured queries, instance
+# discovery) are reachable from any client via its execute_code escape hatch:
+#   from bl_ext.user_default.zcode_mcp import handlers
+#   handlers.HANDLERS["get_console_log"](...)
 HANDLERS: Dict[str, Any] = {
     "get_telemetry_consent": get_telemetry_consent,
     "get_scene_info": get_scene_info,
@@ -192,4 +198,13 @@ HANDLERS: Dict[str, Any] = {
     "get_hyper3d_status": get_hyper3d_status,
     "get_sketchfab_status": get_sketchfab_status,
     "get_hunyuan3d_status": get_hunyuan3d_status,
+    # Bridge extensions (v1.3.0): diagnostics + structured queries.
+    "get_console_log": logcap.get_console_log,
+    "clear_console_log": logcap.clear_console_log,
+    "get_bridge_info": queries.get_bridge_info,
+    "get_hierarchy": queries.get_hierarchy,
+    "get_object_data": queries.get_object_data,
+    "get_material_info": queries.get_material_info,
+    "get_images_report": queries.get_images_report,
+    "list_instances": queries.list_instances,
 }
