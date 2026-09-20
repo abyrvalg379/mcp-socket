@@ -1,5 +1,7 @@
 # ZCode MCP
 
+![ZCode MCP](cover.png)
+
 **Расширение Blender 4.2+.** Лёгкий локальный TCP-мост между Blender и ZCode
 (или любым клиентом, совместимым с `blender-mcp` 1.6.x). Совместим по
 протоколу с `blender-mcp.exe` — конфиг MCP на стороне клиента менять не нужно.

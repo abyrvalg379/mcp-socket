@@ -1,5 +1,7 @@
 # ZCode MCP
 
+![ZCode MCP](cover.png)
+
 **Blender 4.2+ extension.** A lightweight local TCP bridge between Blender and
 ZCode (or any `blender-mcp` 1.6.x-compatible client). Wire-compatible with the
 `blender-mcp.exe` protocol — no MCP config changes needed on the client side.
