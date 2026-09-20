@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-"""Custom colored status icons for ZCode_MCP.
+"""Custom colored status icons for MCP_Socket.
 
 Blender ships no plain green/red dot icon (COLOR_GREEN/COLOR_RED are RGB-palette
 swatches that render with a white "G"/"R" letter; COLLECTION_COLOR_* are
@@ -26,7 +26,7 @@ import zlib
 
 import bpy
 
-_TAG = "[ZCode_MCP]"
+_TAG = "[MCP_Socket]"
 
 # RGB of the two status lights. Tuned to read clearly on a dark panel.
 _GREEN_RGB = (70, 200, 95)
@@ -90,7 +90,7 @@ def register() -> None:
         # attribute does not exist (and never will) until this line runs.
         import bpy.utils.previews  # noqa: F401
 
-        _cache_dir = os.path.join(tempfile.gettempdir(), "zcode_mcp_icons")
+        _cache_dir = os.path.join(tempfile.gettempdir(), "mcp_socket_icons")
         os.makedirs(_cache_dir, exist_ok=True)
 
         paths = {

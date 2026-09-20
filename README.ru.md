@@ -1,6 +1,6 @@
-# ZCode MCP
+# MCP Socket
 
-![ZCode MCP](cover.png)
+![MCP Socket](cover.png)
 
 **Расширение Blender 4.2+.** Лёгкий локальный TCP-мост между Blender и ZCode
 (или любым клиентом, совместимым с `blender-mcp` 1.6.x). Совместим по
@@ -24,7 +24,7 @@
 - **Расширенные команды моста** (v1.3.0) — доступны любому клиенту через его
   code-execution лаз:
   ```python
-  from bl_ext.user_default.zcode_mcp import handlers
+  from bl_ext.user_default.mcp_socket import handlers
   handlers.HANDLERS["get_console_log"](last_n=100)
   ```
   - `get_console_log` / `clear_console_log` — кольцевой буфер (500 строк)
@@ -42,7 +42,7 @@
   - `list_instances` — живые инстансы моста на этой машине (мульти-инстанс)
 - **Мульти-инстанс:** если основной порт занят, мост занимает следующий
   (9877, 9878, …) и регистрируется в
-  `%TEMP%/zcode_mcp_instances/pid_<pid>.json` (хартбит ~10 с) — второй Blender
+  `%TEMP%/mcp_socket_instances/pid_<pid>.json` (хартбит ~10 с) — второй Blender
   живёт со своим мостом параллельно с первым
 - Автостарт при включении аддона
 - Панель в N-меню: статус (зелёный/красный кружок), Test Connection,
@@ -53,12 +53,12 @@
 ## Установка (Blender 4.2+)
 
 1. **Освободите порт 9876** — отключите другие MCP-аддоны, перезапустите Blender.
-2. Скачайте `zcode_mcp.zip` со страницы [последнего релиза](https://github.com/abyrvalg379/zcode-mcp/releases/latest).
+2. Скачайте `mcp_socket.zip` со страницы [последнего релиза](https://github.com/abyrvalg379/mcp-socket/releases/latest).
 3. `Edit → Preferences → Get Extensions → ≡ → Install from Disk…` → выберите zip.
-4. Включите **ZCode MCP** — сервер стартует сам.
-5. Проверка: `/mcp` в ZCode → `connected`, зелёный кружок в панели.
+4. Включите **MCP Socket** — сервер стартует сам.
+5. Проверка: `/mcp` в ZCode (или другом MCP-клиенте) → `connected`, зелёный кружок в панели.
 
-## Настройки (Preferences → Add-ons → ZCode MCP)
+## Настройки (Preferences → Add-ons → MCP Socket)
 
 - **Port** — порт моста (по умолчанию 9876)
 - **Auto port offset for second instance** — если порт занят, пробовать
@@ -68,7 +68,7 @@
 ## Как это работает
 
 ```
-Клиент ZCode MCP (протокол blender-mcp.exe)
+Клиент MCP Socket (протокол blender-mcp.exe)
         │  JSON на каждый запрос: {"type": "<command>", "params": {...}}
         ▼
 TCP-сервер (фоновый поток, localhost:9876)
@@ -76,3 +76,11 @@ TCP-сервер (фоновый поток, localhost:9876)
         ▼
 handlers.py → {"status": "success", "result": ...} | {"status": "error", ...}
 ```
+
+## История версий
+
+- **2.0.0** — переименование в **MCP Socket**: мост никогда не был привязан только к ZCode — работает любой клиент, совместимый с `blender-mcp` 1.6.x. Id расширения `mcp_socket`, панель **MCP Socket**. Перед установкой удалите старое расширение "ZCode MCP"; порт и протокол не менялись.
+- **1.3.0** — расширенные команды моста (`get_console_log`, `get_bridge_info`, `get_hierarchy`, `get_object_data`, `get_material_info`, `get_images_report`, `list_instances`), лог-кольцо консоли, мульти-инстанс (авто-оффсет порта + реестр инстансов с хартбитом), фактический порт в панели
+- **1.2.2** — круглые статус-иконки возвращены: `bpy.utils.previews` — ленивый подмодуль, отсутствовавший явный import и был причиной
+- **1.2.1** — фикс манифеста для Blender 5.2.2 (website плоской строкой)
+- **1.2.0** — extension-only сборка (метаданные только в манифесте)

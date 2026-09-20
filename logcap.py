@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-"""Console capture for ZCode_MCP: a ring buffer of Python-level output.
+"""Console capture for MCP_Socket: a ring buffer of Python-level output.
 
 Scope (important): only output that flows through Python's ``sys.stdout`` /
 ``sys.stderr`` — addon prints, tracebacks, the ``logging`` module. C-level
@@ -21,7 +21,7 @@ import time
 from collections import deque
 from typing import Any, Dict, List, Optional
 
-_TAG = "[ZCode_MCP]"
+_TAG = "[MCP_Socket]"
 
 # Ring size in complete lines. 500 covers a long debugging session without
 # growing unbounded.

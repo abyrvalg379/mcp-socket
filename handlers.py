@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-"""Command handlers for ZCode_MCP.
+"""Command handlers for MCP_Socket.
 
 Every handler runs on Blender's main thread (scheduled by server.py via
 ``bpy.app.timers``) and returns a JSON-serialisable result. The server wraps
@@ -33,7 +33,7 @@ def get_telemetry_consent() -> Dict[str, bool]:
     blender-mcp 1.6.x calls this at startup and blocks until an answer arrives.
     Returning ``{"consent": False}`` tells it to send only minimal anonymous
     events — that is the safe default for a local bridge. Users wanting richer
-    reporting can flip the preference in the ZCode MCP panel.
+    reporting can flip the preference in the MCP Socket panel.
     """
     consent = False
     try:
@@ -98,7 +98,7 @@ def execute_code(code: str) -> Dict[str, Any]:
     """Run arbitrary bpy Python code, return captured stdout.
 
     Powerful and dangerous by design — matches blender-mcp's execute_code so
-    ZCode can drive Blender fully.
+    MCP clients can drive Blender fully.
     """
     namespace: Dict[str, Any] = {"bpy": bpy}
     buffer = io.StringIO()
@@ -153,19 +153,19 @@ def _disabled_status(message: str) -> Dict[str, Any]:
 
 
 def get_polyhaven_status() -> Dict[str, Any]:
-    return _disabled_status("Poly Haven integration is not available in ZCode_MCP.")
+    return _disabled_status("Poly Haven integration is not available in MCP_Socket.")
 
 
 def get_hyper3d_status() -> Dict[str, Any]:
-    return _disabled_status("Hyper3D Rodin integration is not available in ZCode_MCP.")
+    return _disabled_status("Hyper3D Rodin integration is not available in MCP_Socket.")
 
 
 def get_sketchfab_status() -> Dict[str, Any]:
-    return _disabled_status("Sketchfab integration is not available in ZCode_MCP.")
+    return _disabled_status("Sketchfab integration is not available in MCP_Socket.")
 
 
 def get_hunyuan3d_status() -> Dict[str, Any]:
-    return _disabled_status("Hunyuan3D integration is not available in ZCode_MCP.")
+    return _disabled_status("Hunyuan3D integration is not available in MCP_Socket.")
 
 
 # ── helpers ───────────────────────────────────────────────────────────────
@@ -185,7 +185,7 @@ def _world_aabb(obj) -> List[List[float]]:
 # keeps the connection alive without pulling in those integrations' code.
 # Bridge-extension commands (console log, structured queries, instance
 # discovery) are reachable from any client via its execute_code escape hatch:
-#   from bl_ext.user_default.zcode_mcp import handlers
+#   from bl_ext.user_default.mcp_socket import handlers
 #   handlers.HANDLERS["get_console_log"](...)
 HANDLERS: Dict[str, Any] = {
     "get_telemetry_consent": get_telemetry_consent,

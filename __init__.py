@@ -1,10 +1,10 @@
 # -*- coding:utf-8 -*-
-"""ZCode MCP — Blender bridge for ZCode, wire-compatible with blender-mcp 1.6.x.
+"""MCP Socket — local Blender bridge for MCP clients, wire-compatible with blender-mcp 1.6.x.
 
 Metadata lives in ``blender_manifest.toml`` (Blender 4.2+ extension standard).
 
 On register, the TCP bridge auto-starts on the configured port (default 9876)
-so ZCode/blender-mcp can connect without any UI interaction — same behaviour
+so MCP clients can connect without any UI interaction — same behaviour
 as the upstream blender-mcp addon.
 """
 
@@ -19,12 +19,12 @@ if "bpy" in locals():
     import sys as _sys
     from . import handlers, icons, logcap, queries, server, ui
     for _key, _mod in (
-        ("zcode_mcp.handlers", handlers),
-        ("zcode_mcp.icons", icons),
-        ("zcode_mcp.logcap", logcap),
-        ("zcode_mcp.queries", queries),
-        ("zcode_mcp.server", server),
-        ("zcode_mcp.ui", ui),
+        ("mcp_socket.handlers", handlers),
+        ("mcp_socket.icons", icons),
+        ("mcp_socket.logcap", logcap),
+        ("mcp_socket.queries", queries),
+        ("mcp_socket.server", server),
+        ("mcp_socket.ui", ui),
     ):
         _sys.modules[_key] = _mod
         importlib.reload(_mod)
@@ -34,14 +34,14 @@ from . import logcap, queries, ui  # noqa: E402 — re-import after reload guard
 # Extension-only add-on: all metadata lives in blender_manifest.toml
 # (Blender 4.2+ extension standard). No legacy bl_info fallback.
 
-_TAG = "[ZCode_MCP]"
-_ADDON_ID = "zcode_mcp"
+_TAG = "[MCP_Socket]"
+_ADDON_ID = "mcp_socket"
 
 
 def _scene_port(scene) -> int:
     """Port to bind, reading scene prop or falling back to 9876."""
     try:
-        port = scene.zcode_mcp_port
+        port = scene.mcp_socket_port
         if isinstance(port, int) and 1024 <= port <= 65535:
             return port
     except AttributeError:
@@ -59,15 +59,15 @@ def _autostart() -> None:
         auto_offset = bool(addon.preferences.auto_port_offset) if addon else True
     except (AttributeError, KeyError):
         auto_offset = True
-    current = getattr(bpy.types, "zcode_mcp_server", None)
+    current = getattr(bpy.types, "mcp_socket_server", None)
     if current is None:
-        bpy.types.zcode_mcp_server = _server.ZCodeMCPServer(
+        bpy.types.mcp_socket_server = _server.MCPSocketServer(
             port=port, auto_offset=auto_offset)
-    if not bpy.types.zcode_mcp_server.running:
-        ok = bpy.types.zcode_mcp_server.start()
+    if not bpy.types.mcp_socket_server.running:
+        ok = bpy.types.mcp_socket_server.start()
         if scene is not None:
             try:
-                scene.zcode_mcp_running = bpy.types.zcode_mcp_server.running
+                scene.mcp_socket_running = bpy.types.mcp_socket_server.running
             except AttributeError:
                 pass
         if not ok:
@@ -95,14 +95,14 @@ def register() -> None:
 
 
 def unregister() -> None:
-    current = getattr(bpy.types, "zcode_mcp_server", None)
+    current = getattr(bpy.types, "mcp_socket_server", None)
     if current is not None:
         try:
             current.stop()
         except Exception as exc:  # noqa: BLE001
             print(f"{_TAG} stop on unregister: {exc}")
         try:
-            del bpy.types.zcode_mcp_server
+            del bpy.types.mcp_socket_server
         except AttributeError:
             pass
 

@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-"""TCP bridge between Blender and the ZCode / blender-mcp client.
+"""TCP bridge between Blender and MCP clients (blender-mcp 1.6.x compatible).
 
 Wire protocol (matches blender-mcp 1.6.x):
 
@@ -35,10 +35,10 @@ import bpy
 
 from . import handlers, queries
 
-_TAG = "[ZCode_MCP]"
+_TAG = "[MCP_Socket]"
 
 # Default loopback bind. 9876 matches blender-mcp's DEFAULT_PORT so the existing
-# ZCode MCP config (no path/port changes) keeps working.
+# MCP Socket config (no path/port changes) keeps working.
 _DEFAULT_HOST = "localhost"
 _DEFAULT_PORT = 9876
 
@@ -66,7 +66,7 @@ _HANDLER_WARN_SECONDS = 30.0
 _CLIENT_IDLE_TIMEOUT = 30.0
 
 
-class ZCodeMCPServer:
+class MCPSocketServer:
     """Single-connection TCP server bridging to Blender's main thread."""
 
     def __init__(self, host: str = _DEFAULT_HOST, port: int = _DEFAULT_PORT,

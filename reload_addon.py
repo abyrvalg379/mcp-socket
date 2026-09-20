@@ -1,12 +1,12 @@
 # Run this in Blender's Python console (Scripting workspace) or via MCP to
-# hot-reload ZCode_MCP after editing the source. Mirrors the STUKACH reload.
+# hot-reload MCP_Socket after editing the source. Mirrors the STUKACH reload.
 import bpy, sys
 
-bpy.ops.preferences.addon_disable(module="zcode_mcp")
+bpy.ops.preferences.addon_disable(module="mcp_socket")
 
-to_del = [k for k in sys.modules if k == 'zcode_mcp' or k.startswith('zcode_mcp.')]
+to_del = [k for k in sys.modules if k == 'mcp_socket' or k.startswith('mcp_socket.')]
 for k in to_del:
     del sys.modules[k]
 
-bpy.ops.preferences.addon_enable(module="zcode_mcp")
-print("[ZCode_MCP] Reloaded OK")
+bpy.ops.preferences.addon_enable(module="mcp_socket")
+print("[MCP_Socket] Reloaded OK")

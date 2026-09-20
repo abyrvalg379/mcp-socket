@@ -1,12 +1,12 @@
 # -*- coding:utf-8 -*-
-"""Structured read-only scene queries + multi-instance registry for ZCode_MCP.
+"""Structured read-only scene queries + multi-instance registry for MCP_Socket.
 
 These handlers exist so MCP clients can inspect the scene without falling back
 to ``execute_code`` for every question: cheaper round trips, no accidental
 mutations, JSON-safe output. Everything here is read-only with the single
 exception of the instance-registry files in the temp dir.
 
-Multi-instance: every running bridge writes ``%TEMP%/zcode_mcp_instances/
+Multi-instance: every running bridge writes ``%TEMP%/mcp_socket_instances/
 pid_<pid>.json`` on start and refreshes it from the UI refresh timer
 (heartbeat). A second Blender instance can't bind the primary port, so the
 server walks +1..+10 (see server.py) — ``list_instances`` is how a client
@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Optional
 
 import bpy
 
-_TAG = "[ZCode_MCP]"
+_TAG = "[MCP_Socket]"
 
 _VERSION_CACHE: str = ""
 
@@ -49,7 +49,7 @@ def bridge_version() -> str:
 def get_bridge_info() -> Dict[str, Any]:
     """One-call identity card of this Blender instance."""
     scene = getattr(bpy.context, "scene", None)
-    srv = getattr(bpy.types, "zcode_mcp_server", None)
+    srv = getattr(bpy.types, "mcp_socket_server", None)
     snap: Dict[str, Any] = srv.status_snapshot() if srv is not None else {}
     return {
         "bridge_version": bridge_version(),
@@ -72,7 +72,7 @@ def get_bridge_info() -> Dict[str, Any]:
 
 def _registry_dir() -> str:
     import tempfile
-    return os.path.join(tempfile.gettempdir(), "zcode_mcp_instances")
+    return os.path.join(tempfile.gettempdir(), "mcp_socket_instances")
 
 
 def write_instance_file(server) -> Optional[str]:
@@ -115,7 +115,7 @@ def heartbeat() -> None:
 
     Called from the UI refresh timer — keep it cheap and silent.
     """
-    srv = getattr(bpy.types, "zcode_mcp_server", None)
+    srv = getattr(bpy.types, "mcp_socket_server", None)
     if srv is not None and getattr(srv, "running", False):
         write_instance_file(srv)
 

@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-"""UI for ZCode_MCP: a sidebar panel in the 3D viewport and addon preferences.
+"""UI for MCP_Socket: a sidebar panel in the 3D viewport and addon preferences.
 
 Panel shows a live connection-status badge, an active-client/last-command
 counter, a Start/Stop operator, a Test-connection operator, and the port.
@@ -15,7 +15,7 @@ from bpy.types import AddonPreferences, Operator, Panel
 
 from .queries import bridge_version
 
-_TAG = "[ZCode_MCP]"
+_TAG = "[MCP_Socket]"
 _DEFAULT_PORT = 9876
 
 # Panel header shows the version (product rule: every addon's N-panel header
@@ -29,12 +29,12 @@ _REFRESH_INTERVAL = 1.5
 
 # ── addon preferences ────────────────────────────────────────────────────
 
-class ZCodeMCP_AddonPreferences(AddonPreferences):
-    bl_idname = "zcode_mcp"
+class MCPSocket_AddonPreferences(AddonPreferences):
+    bl_idname = "mcp_socket"
 
     port: IntProperty(
         name="Port",
-        description="TCP port for the ZCode MCP bridge (matches blender-mcp default)",
+        description="TCP port for the MCP Socket bridge (matches blender-mcp default)",
         default=_DEFAULT_PORT,
         min=1024,
         max=65535,
@@ -62,14 +62,14 @@ class ZCodeMCP_AddonPreferences(AddonPreferences):
 
 # ── helpers ──────────────────────────────────────────────────────────────
 
-def _prefs(context) -> ZCodeMCP_AddonPreferences:
-    addon = context.preferences.addons.get("zcode_mcp")
+def _prefs(context) -> MCPSocket_AddonPreferences:
+    addon = context.preferences.addons.get("mcp_socket")
     return addon.preferences if addon else None
 
 
 def _server() -> object:
-    """The live ZCodeMCPServer instance, or None."""
-    return getattr(bpy.types, "zcode_mcp_server", None)
+    """The live MCPSocketServer instance, or None."""
+    return getattr(bpy.types, "mcp_socket_server", None)
 
 
 def _classify_status(snap: dict) -> tuple[str, int, bool]:
@@ -104,10 +104,10 @@ def _fmt_age(age) -> str:
 
 # ── operators ────────────────────────────────────────────────────────────
 
-class ZCODEMCP_OT_start(Operator):
-    bl_idname = "zcode_mcp.start"
+class MCPSOCKET_OT_start(Operator):
+    bl_idname = "mcp_socket.start"
     bl_label = "Start Bridge"
-    bl_description = "Start the ZCode MCP TCP bridge on the configured port"
+    bl_description = "Start the MCP Socket TCP bridge on the configured port"
 
     def execute(self, context):
         from . import server as _server_mod
@@ -117,35 +117,35 @@ class ZCODEMCP_OT_start(Operator):
 
         current = _server()
         if current is None:
-            bpy.types.zcode_mcp_server = _server_mod.ZCodeMCPServer(
+            bpy.types.mcp_socket_server = _server_mod.MCPSocketServer(
                 port=port, auto_offset=auto_offset)
-        ok = bpy.types.zcode_mcp_server.start()
-        context.scene.zcode_mcp_running = bpy.types.zcode_mcp_server.running
+        ok = bpy.types.mcp_socket_server.start()
+        context.scene.mcp_socket_running = bpy.types.mcp_socket_server.running
         if ok:
-            self.report({"INFO"}, f"ZCode MCP bridge on :{port}")
+            self.report({"INFO"}, f"MCP Socket bridge on :{port}")
         else:
-            self.report({"ERROR"}, f"Could not start ZCode MCP bridge on :{port} "
+            self.report({"ERROR"}, f"Could not start MCP Socket bridge on :{port} "
                                    "(port busy? remove the old 'Blender MCP' addon)")
         return {"FINISHED"}
 
 
-class ZCODEMCP_OT_stop(Operator):
-    bl_idname = "zcode_mcp.stop"
+class MCPSOCKET_OT_stop(Operator):
+    bl_idname = "mcp_socket.stop"
     bl_label = "Stop Bridge"
-    bl_description = "Stop the ZCode MCP TCP bridge"
+    bl_description = "Stop the MCP Socket TCP bridge"
 
     def execute(self, context):
         current = _server()
         if current is not None:
             current.stop()
-            del bpy.types.zcode_mcp_server
-        context.scene.zcode_mcp_running = False
-        self.report({"INFO"}, "ZCode MCP bridge stopped")
+            del bpy.types.mcp_socket_server
+        context.scene.mcp_socket_running = False
+        self.report({"INFO"}, "MCP Socket bridge stopped")
         return {"FINISHED"}
 
 
-class ZCODEMCP_OT_test(Operator):
-    bl_idname = "zcode_mcp.test"
+class MCPSOCKET_OT_test(Operator):
+    bl_idname = "mcp_socket.test"
     bl_label = "Test Connection"
     bl_description = "Run get_scene_info locally and report the result"
 
@@ -160,17 +160,17 @@ class ZCODEMCP_OT_test(Operator):
             mat_count = result.get("materials_count", "?")
             self.report({"INFO"},
                         f"OK — {obj_count} objects, {mat_count} materials")
-            context.scene.zcode_mcp_test_ok = True
-            context.scene.zcode_mcp_test_msg = f"{obj_count} objects · {mat_count} materials"
+            context.scene.mcp_socket_test_ok = True
+            context.scene.mcp_socket_test_msg = f"{obj_count} objects · {mat_count} materials"
         except Exception as exc:  # noqa: BLE001
             self.report({"ERROR"}, f"Test failed: {exc}")
-            context.scene.zcode_mcp_test_ok = False
-            context.scene.zcode_mcp_test_msg = f"ERROR: {exc}"
+            context.scene.mcp_socket_test_ok = False
+            context.scene.mcp_socket_test_msg = f"ERROR: {exc}"
         return {"FINISHED"}
 
 
-class ZCODEMCP_OT_log_save(Operator):
-    bl_idname = "zcode_mcp.log_save"
+class MCPSOCKET_OT_log_save(Operator):
+    bl_idname = "mcp_socket.log_save"
     bl_label = "Save Log"
     bl_description = ("Dump the console ring buffer to a timestamped file in "
                       "%TEMP% (path lands in the clipboard)")
@@ -181,7 +181,7 @@ class ZCODEMCP_OT_log_save(Operator):
         import time as _time
         from . import logcap
         data = logcap.get_console_log(last_n=logcap.MAX_LINES)
-        out_dir = os.path.join(tempfile.gettempdir(), "zcode_mcp")
+        out_dir = os.path.join(tempfile.gettempdir(), "mcp_socket")
         os.makedirs(out_dir, exist_ok=True)
         path = os.path.join(
             out_dir, f"console_{_time.strftime('%Y%m%d_%H%M%S')}.log")
@@ -196,8 +196,8 @@ class ZCODEMCP_OT_log_save(Operator):
         return {"FINISHED"}
 
 
-class ZCODEMCP_OT_log_clear(Operator):
-    bl_idname = "zcode_mcp.log_clear"
+class MCPSOCKET_OT_log_clear(Operator):
+    bl_idname = "mcp_socket.log_clear"
     bl_label = "Clear"
     bl_description = "Clear the console ring buffer"
 
@@ -210,11 +210,11 @@ class ZCODEMCP_OT_log_clear(Operator):
 
 # ── sidebar panel ────────────────────────────────────────────────────────
 
-class ZCODEMCP_PT_panel(Panel):
+class MCPSOCKET_PT_panel(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "ZCode MCP"
-    bl_label = f"ZCode MCP Bridge {_VERSION_STR}"
+    bl_category = "MCP Socket"
+    bl_label = f"MCP Socket Bridge {_VERSION_STR}"
 
     def draw(self, context):
         layout = self.layout
@@ -250,10 +250,10 @@ class ZCODEMCP_PT_panel(Panel):
                 row.label(text="No commands yet")
 
         # ── Test connection result (shown briefly after the test) ─────────
-        test_msg = getattr(scene, "zcode_mcp_test_msg", "")
+        test_msg = getattr(scene, "mcp_socket_test_msg", "")
         if test_msg:
             row = layout.row(align=True)
-            ok = getattr(scene, "zcode_mcp_test_ok", False)
+            ok = getattr(scene, "mcp_socket_test_ok", False)
             row.alert = not ok
             row.label(text=test_msg,
                       icon="CHECKMARK" if ok else "ERROR")
@@ -262,10 +262,10 @@ class ZCODEMCP_PT_panel(Panel):
         col = layout.column(align=True)
         col.scale_y = 1.3
         if snap.get("running"):
-            col.operator("zcode_mcp.stop", icon="PAUSE")
-            col.operator("zcode_mcp.test", icon="CONSOLE")
+            col.operator("mcp_socket.stop", icon="PAUSE")
+            col.operator("mcp_socket.test", icon="CONSOLE")
         else:
-            col.operator("zcode_mcp.start", icon="PLAY")
+            col.operator("mcp_socket.start", icon="PLAY")
 
         # ── Port (live value when running — may be offset in a second
         # instance; editable in Preferences) ────────────────────────────────
@@ -281,11 +281,11 @@ class ZCODEMCP_PT_panel(Panel):
 
 # ── console log sub-panel ────────────────────────────────────────────────
 
-class ZCODEMCP_PT_log(Panel):
+class MCPSOCKET_PT_log(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "ZCode MCP"
-    bl_parent_id = "ZCODEMCP_PT_panel"
+    bl_category = "MCP Socket"
+    bl_parent_id = "MCPSOCKET_PT_panel"
     bl_label = "Console Log"
     bl_options = {"DEFAULT_CLOSED"}
 
@@ -303,8 +303,8 @@ class ZCODEMCP_PT_log(Panel):
             for text in lines:
                 col.label(text=text[:64])
         row = layout.row(align=True)
-        row.operator("zcode_mcp.log_save", text="Save to File", icon="EXPORT")
-        row.operator("zcode_mcp.log_clear", text="", icon="X")
+        row.operator("mcp_socket.log_save", text="Save to File", icon="EXPORT")
+        row.operator("mcp_socket.log_clear", text="", icon="X")
 
 
 # ── refresh timer ────────────────────────────────────────────────────────
@@ -340,14 +340,14 @@ def _refresh_panel():
 # ── registration ─────────────────────────────────────────────────────────
 
 classes = (
-    ZCodeMCP_AddonPreferences,
-    ZCODEMCP_OT_start,
-    ZCODEMCP_OT_stop,
-    ZCODEMCP_OT_test,
-    ZCODEMCP_OT_log_save,
-    ZCODEMCP_OT_log_clear,
-    ZCODEMCP_PT_panel,
-    ZCODEMCP_PT_log,
+    MCPSocket_AddonPreferences,
+    MCPSOCKET_OT_start,
+    MCPSOCKET_OT_stop,
+    MCPSOCKET_OT_test,
+    MCPSOCKET_OT_log_save,
+    MCPSOCKET_OT_log_clear,
+    MCPSOCKET_PT_panel,
+    MCPSOCKET_PT_log,
 )
 
 
@@ -359,16 +359,16 @@ def register() -> None:
         except Exception as exc:  # noqa: BLE001
             print(f"{_TAG} register {cls.__name__}: {exc}")
 
-    bpy.types.Scene.zcode_mcp_port = IntProperty(
+    bpy.types.Scene.mcp_socket_port = IntProperty(
         name="Port",
         default=_DEFAULT_PORT,
         min=1024,
         max=65535,
     )
-    bpy.types.Scene.zcode_mcp_running = BoolProperty(name="Running", default=False)
+    bpy.types.Scene.mcp_socket_running = BoolProperty(name="Running", default=False)
     # Transient state for the Test-connection operator's result display.
-    bpy.types.Scene.zcode_mcp_test_ok = BoolProperty(default=False)
-    bpy.types.Scene.zcode_mcp_test_msg = StringProperty(default="")
+    bpy.types.Scene.mcp_socket_test_ok = BoolProperty(default=False)
+    bpy.types.Scene.mcp_socket_test_msg = StringProperty(default="")
 
     # Start the refresh timer so the badge tracks live connections.
     if _refresh_timer is None:
@@ -393,8 +393,8 @@ def unregister() -> None:
         except Exception:  # noqa: BLE001
             pass
 
-    for attr in ("zcode_mcp_port", "zcode_mcp_running",
-                 "zcode_mcp_test_ok", "zcode_mcp_test_msg"):
+    for attr in ("mcp_socket_port", "mcp_socket_running",
+                 "mcp_socket_test_ok", "mcp_socket_test_msg"):
         try:
             delattr(bpy.types.Scene, attr)
         except AttributeError:

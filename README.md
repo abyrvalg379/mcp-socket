@@ -1,6 +1,6 @@
-# ZCode MCP
+# MCP Socket
 
-![ZCode MCP](cover.png)
+![MCP Socket](cover.png)
 
 **Blender 4.2+ extension.** A lightweight local TCP bridge between Blender and
 ZCode (or any `blender-mcp` 1.6.x-compatible client). Wire-compatible with the
@@ -30,7 +30,7 @@ Author: **Maksim Kovalev** · License: GPL-3.0-or-later
 - **Bridge extension commands** (v1.3.0) — reachable from any client via its
   code-execution escape hatch:
   ```python
-  from bl_ext.user_default.zcode_mcp import handlers
+  from bl_ext.user_default.mcp_socket import handlers
   handlers.HANDLERS["get_console_log"](last_n=100)
   ```
   - `get_console_log` / `clear_console_log` — ring buffer (500 lines) of
@@ -47,7 +47,7 @@ Author: **Maksim Kovalev** · License: GPL-3.0-or-later
   - `list_instances` — live bridge instances on this machine (multi-instance)
 - **Multi-instance:** if the preferred port is busy, the bridge binds the next
   port (9877, 9878, …) and registers itself in
-  `%TEMP%/zcode_mcp_instances/pid_<pid>.json` (heartbeat every ~10 s) — a
+  `%TEMP%/mcp_socket_instances/pid_<pid>.json` (heartbeat every ~10 s) — a
   second Blender instance runs its own bridge side by side with the first
 - Auto-starts when the add-on is enabled
 - N-panel in the 3D viewport: status badge (green/red dot), Test Connection,
@@ -60,10 +60,10 @@ Author: **Maksim Kovalev** · License: GPL-3.0-or-later
 1. **Free the port.** Disable any other add-on that owns port 9876
    (e.g. the Blender Lab "MCP" extension or an old "Blender MCP" add-on),
    then restart Blender.
-2. Download `zcode_mcp.zip` from the [latest release](https://github.com/abyrvalg379/zcode-mcp/releases/latest).
+2. Download `mcp_socket.zip` from the [latest release](https://github.com/abyrvalg379/mcp-socket/releases/latest).
 3. `Edit → Preferences → Get Extensions → ≡ (top right) → Install from Disk…`
    → pick the zip.
-4. Enable **ZCode MCP**. The bridge starts automatically.
+4. Enable **MCP Socket**. The bridge starts automatically.
 5. Verify: `/mcp` in ZCode shows Blender as `connected` (green dot in panel).
 
 ## Preferences
@@ -77,7 +77,7 @@ Author: **Maksim Kovalev** · License: GPL-3.0-or-later
 ## How it works
 
 ```
-ZCode MCP client (blender-mcp.exe protocol)
+MCP Socket client (blender-mcp.exe protocol)
         │  JSON per request: {"type": "<command>", "params": {...}}
         ▼
 TCP server (background thread, localhost:9876)
@@ -89,7 +89,7 @@ handlers.py → {"status": "success", "result": ...} | {"status": "error", ...}
 ## Structure
 
 ```
-zcode_mcp/
+mcp_socket/
 ├── blender_manifest.toml   extension metadata (Blender 4.2+)
 ├── __init__.py             register/unregister + auto-start + hot-reload guard
 ├── server.py               TCP 9876, port offset, threads, main-thread dispatch
@@ -102,6 +102,11 @@ zcode_mcp/
 ```
 
 ## Changelog
+
+- **2.0.0** — renamed to **MCP Socket**: the bridge was never ZCode-specific —
+  any `blender-mcp` 1.6.x-compatible client works. Module id `mcp_socket`,
+  panel **MCP Socket**. Uninstall the old "ZCode MCP" extension before
+  installing this one; port and protocol unchanged.
 
 - **1.3.0** — bridge extension commands (`get_console_log`, `get_bridge_info`,
   `get_hierarchy`, `get_object_data`, `get_material_info`, `get_images_report`,
