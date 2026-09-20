@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id            = "zcode_mcp"
-version       = "1.2.0"
+version       = "1.2.1"
 name          = "ZCode MCP"
 tagline       = "Blender bridge for ZCode — wire-compatible with blender-mcp 1.6.x"
 maintainer    = "Maksim Kovalev"
@@ -13,8 +13,7 @@ license       = ["SPDX:GPL-3.0-or-later"]
 
 tags          = ["Pipeline"]
 
-[website]
-value = "https://github.com/abyrvalg379/zcode-mcp"
+website = "https://github.com/abyrvalg379/zcode-mcp"
 
 [permissions]
 # TCP server on localhost:9876 for the ZCode/blender-mcp client.
