@@ -212,7 +212,7 @@ def _handle(msg: dict, port: int) -> None:
             "protocolVersion": msg.get("params", {}).get("protocolVersion",
                                                          "2025-11-25"),
             "capabilities": {"tools": {"listChanged": False}},
-            "serverInfo": {"name": "mcp-socket", "version": "2.5.0"},
+            "serverInfo": {"name": "mcp-socket", "version": "2.6.0"},
         })
     elif method == "notifications/initialized":
         pass

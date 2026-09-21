@@ -59,6 +59,13 @@ Author: **Maksim Kovalev** · License: GPL-3.0-or-later
   check instead of guessing) and `get_pipeline_conventions` (the user's
   pipeline rules from `conventions.json`: receiver rule, per-DCC
   units/naming/UV table, preset guidance — answered from the file, no LLM)
+- **Agent session log + replay** (v2.6.0) — every bridge command is appended
+  to a per-session JSONL file in `%TEMP%/mcp_socket/sessions/` (a 10 s idle
+  gap starts a new file, same boundary as the undo checkpoint; last 30 kept).
+  The panel's **Agent Sessions** sub-panel shows the newest session and can
+  re-run its mutating commands in order (read-only queries skipped, each step
+  reports its own result) — redo a naming/export ritual on the next asset,
+  audit what the agent did, find the step that broke
 - **Multi-instance:** if the preferred port is busy, the bridge binds the next
   port (9877, 9878, …) and registers itself in
   `%TEMP%/mcp_socket_instances/pid_<pid>.json` (heartbeat every ~10 s) — a
@@ -134,6 +141,7 @@ mcp_socket/
 ├── pipeline.py             FBX export/import per PROKLADKA rules + presets
 ├── render.py               offscreen render (viewport OpenGL / camera)
 ├── api_info.py             runtime bpy API lookup (ops/types/enum facts)
+├── sessions.py             agent session log (JSONL) + replay
 ├── conventions.json        user pipeline rules served by get_pipeline_conventions
 ├── presets.py              export preset contracts (PROKLADKA)
 ├── ui.py                   N-panel + preferences + operators + refresh timer
@@ -145,6 +153,13 @@ mcp_socket/
 
 ## Changelog
 
+- **2.6.0** — **agent session log + replay** (`sessions.py`): every bridge
+  command recorded to per-session JSONL in `%TEMP%/mcp_socket/sessions/`
+  (10 s idle gap = new file, like the undo checkpoint; 30 files kept);
+  **Agent Sessions** sub-panel: replay the last session's mutating commands
+  in order (read-only skipped, per-step results, replay steps logged with
+  `replay: true`), copy the log path. Idea credit:
+  seehiong/blender-mcp-bridge (Blender Studio record/replay)
 - **2.5.0** — **agent knowledge layer**, two new tools: `get_bpy_api_info`
   (exact API facts from the running Blender: operator parameters, property
   types, enum items — inspired by bpy-dev/blender-mcp's runtime lookup) and

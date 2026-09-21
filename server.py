@@ -34,7 +34,7 @@ from typing import Any, Dict, Optional
 
 import bpy
 
-from . import handlers, queries
+from . import handlers, queries, sessions
 
 _TAG = "[MCP_Socket]"
 
@@ -232,14 +232,19 @@ class MCPSocketServer:
         cmd_type = command.get("type")
 
         def run_on_main_thread():
+            started = time.monotonic()
             try:
                 response = self._execute(command)
             except Exception as exc:  # noqa: BLE001 — surface as protocol error
                 print(f"{_TAG} command failed: {exc}")
                 traceback.print_exc()
                 response = {"status": "error", "message": str(exc)}
+            elapsed = time.monotonic() - started
             # Record final outcome (success/error) for the UI.
             self._record_command_done(cmd_type, response.get("status", "error"))
+            if isinstance(cmd_type, str):
+                sessions.record_command(cmd_type, command.get("params") or {},
+                                        response.get("status", "error"), elapsed)
             try:
                 client.sendall((json.dumps(response)).encode("utf-8"))
             except OSError:

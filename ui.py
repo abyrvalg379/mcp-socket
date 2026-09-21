@@ -320,6 +320,64 @@ class MCPSOCKET_OT_render(Operator):
         return {"FINISHED"}
 
 
+class MCPSOCKET_OT_replay(Operator):
+    bl_idname = "mcp_socket.replay"
+    bl_label = "Replay Last Session"
+    bl_description = ("Re-run the last agent session's mutating commands in "
+                      "order (read-only queries are skipped). Replay against "
+                      "the CURRENT scene — each step reports its own result")
+
+    def invoke(self, context, event):
+        from . import sessions
+        path = sessions.last_session_file()
+        if not path:
+            self.report({"ERROR"}, "No session log recorded yet")
+            return {"CANCELLED"}
+        return context.window_manager.invoke_confirm(self, event)
+
+    def draw(self, context):
+        from . import sessions
+        info = sessions.session_info()
+        col = self.layout.column()
+        col.label(text="Replay %d commands from:" % info.get("replayable", 0))
+        col.label(text=info.get("filename", "?"), icon="FILE_TICK")
+
+    def execute(self, context):
+        from . import sessions
+        path = sessions.last_session_file()
+        if not path:
+            self.report({"ERROR"}, "No session log recorded yet")
+            return {"CANCELLED"}
+        try:
+            rep = sessions.run_replay(path)
+        except (ValueError, RuntimeError) as exc:
+            self.report({"ERROR"}, str(exc))
+            return {"CANCELLED"}
+        msg = f"Replayed {rep['steps_ok']}/{rep['steps_total']} ok"
+        if rep["steps_failed"]:
+            self.report({"WARNING"}, msg)
+        else:
+            self.report({"INFO"}, msg)
+        return {"FINISHED"}
+
+
+class MCPSOCKET_OT_session_path(Operator):
+    bl_idname = "mcp_socket.session_path"
+    bl_label = "Copy Session Path"
+    bl_description = ("Copy the newest session log's path to the clipboard "
+                      "(JSONL: every bridge command with params and status)")
+
+    def execute(self, context):
+        from . import sessions
+        path = sessions.last_session_file()
+        if not path:
+            self.report({"ERROR"}, "No session log recorded yet")
+            return {"CANCELLED"}
+        context.window_manager.clipboard = path
+        self.report({"INFO"}, f"Copied: {path}")
+        return {"FINISHED"}
+
+
 class MCPSOCKET_OT_undo(Operator):
     bl_idname = "mcp_socket.undo"
     bl_label = "Undo Agent Work"
@@ -450,6 +508,38 @@ class MCPSOCKET_PT_render(Panel):
         row.label(text="Viewport: OpenGL, no window", icon="INFO")
 
 
+# ── agent sessions sub-panel ─────────────────────────────────────────────
+
+class MCPSOCKET_PT_sessions(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "MCP Socket"
+    bl_parent_id = "MCPSOCKET_PT_panel"
+    bl_label = "Agent Sessions"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        from . import sessions
+        layout = self.layout
+        info = sessions.session_info()
+        if not info.get("available"):
+            row = layout.row()
+            row.active = False
+            row.label(text="(no sessions recorded)", icon="TIME")
+            return
+        row = layout.row(align=True)
+        row.scale_y = 0.75
+        row.active = False
+        row.label(text="  Last: %s (%d cmds)" % (info.get("filename", "?")[:28],
+                                                 info.get("commands", 0)),
+                  icon="TIME")
+        col = layout.column(align=True)
+        col.scale_y = 1.1
+        col.operator("mcp_socket.replay", icon="LOOP_FORWARDS")
+        row = layout.row(align=True)
+        row.operator("mcp_socket.session_path", text="Copy Log Path", icon="COPYDOWN")
+
+
 # ── console log sub-panel ────────────────────────────────────────────────
 
 class MCPSOCKET_PT_log(Panel):
@@ -521,9 +611,12 @@ classes = (
     MCPSOCKET_OT_export_fbx,
     MCPSOCKET_OT_import_fbx,
     MCPSOCKET_OT_render,
+    MCPSOCKET_OT_replay,
+    MCPSOCKET_OT_session_path,
     MCPSOCKET_PT_panel,
     MCPSOCKET_PT_pipeline,
     MCPSOCKET_PT_render,
+    MCPSOCKET_PT_sessions,
     MCPSOCKET_PT_log,
 )
 
