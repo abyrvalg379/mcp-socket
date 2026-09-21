@@ -6,7 +6,7 @@
 ZCode (or any `blender-mcp` 1.6.x-compatible client). Wire-compatible with the
 `blender-mcp.exe` protocol — no MCP config changes needed on the client side.
 
-*Документация на русском: [README.ru.md](README.ru.md)*
+*Документация на русском: [README.ru.md](README.ru.md) · Полный мануал по каждой функции: [MANUAL.md](MANUAL.md)*
 
 Author: **Maksim Kovalev** · License: GPL-3.0-or-later
 

@@ -8,6 +8,8 @@
 
 *English documentation: [README.md](README.md)*
 
+📖 **[MANUAL.md](MANUAL.md) — понятный мануал по каждой функции** (тула, панель, настройки, диагностика)
+
 Автор: **Maksim Kovalev** · Лицензия: GPL-3.0-or-later
 
 > ⚠️ **Безопасность:** аддон поднимает TCP-сервер на `localhost` (по умолчанию
