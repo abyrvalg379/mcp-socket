@@ -1,0 +1,24 @@
+{
+  "pipeline": "PROKLADKA",
+  "philosophy": "The asset adapts to the RECEIVING DCC, never the other way around. The sending side exports neutral: meters, Y-up, binary FBX. The receiver converts to its own conventions at import.",
+  "receiver_rule": {
+    "container": "Imported asset lands in a container EMPTY with t=0 r=0 s=1 at the world origin",
+    "dimensions": "Correct size is baked into the vertices (makeIdentity / transform_apply), never compensated by node scale",
+    "oversize_policy": "Meshes larger than 50 m are REPORTED, never auto-rescaled (no magic multipliers)",
+    "unit_conversion": "Done by geometry, not by a node"
+  },
+  "receivers": {
+    "Blender": {"units": "meters", "naming": "lowercase + _geo/_grp/_skel suffixes", "uv_primary": "UVMap", "format": "FBX"},
+    "Maya": {"units": "meters", "naming": "lowercase + _geo/_grp suffixes", "uv_primary": "map1", "format": "FBX"},
+    "Houdini": {"units": "meters", "naming": "node suffixes _geo/_vdb/_abc", "uv_primary": "uv (attrs over UVs)", "format": "FBX/VDB/Alembic"},
+    "Unreal": {"units": "centimeters (x100 from meters, import scale applied UE-side)", "naming": "PascalCase + SM_/SK_/T_/MI_ prefixes", "uv_primary": "channels, secondary = LightmassUV", "format": "FBX"}
+  },
+  "naming_idempotency": "Apply Naming strips existing suffixes then adds the correct one — running it twice changes nothing. It always covers the selection AND its whole child branch (decision 2026-09-21).",
+  "export_presets": "Use the list_presets tool for resolved settings: maya / houdini / ue / neutral. Per-call overrides merge over the preset and are echoed in the report.",
+  "render_output": "Image files: PNG for previews, EXR for data (colorspace: data files raw, color files acescg).",
+  "notes": [
+    "FBX exports include children of selected Empties automatically (children_recursive).",
+    "Use the render_offscreen tool for quick previews: mode viewport (fast OpenGL) or camera (scene engine).",
+    "Check API facts with get_bpy_api_info instead of guessing parameter names or enum values."
+  ]
+}

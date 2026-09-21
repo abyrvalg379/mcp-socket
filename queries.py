@@ -67,6 +67,27 @@ def get_bridge_info() -> Dict[str, Any]:
     }
 
 
+def get_pipeline_conventions() -> Dict[str, Any]:
+    """The user's pipeline conventions, answered from a plain JSON file.
+
+    Reference: seehiong/blender-mcp-bridge's design-rules tools — the agent
+    reads the rules from the file (no LLM, no network) before modelling, so
+    units/naming/receiver rules are known, not guessed. Edit
+    conventions.json next to this module to change what it returns.
+    """
+    path = os.path.join(os.path.dirname(__file__), "conventions.json")
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except FileNotFoundError:
+        raise ValueError("conventions.json is missing from the addon folder: %s"
+                         % path)
+    except json.JSONDecodeError as exc:
+        raise ValueError("conventions.json is not valid JSON: %s" % exc)
+    data["source"] = path
+    return data
+
+
 # ── instance registry (multi-instance discovery) ──────────────────────────
 
 

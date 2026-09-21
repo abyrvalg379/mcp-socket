@@ -54,6 +54,11 @@ Author: **Maksim Kovalev** · License: GPL-3.0-or-later
   or `camera` (full scene engine from the scene camera; Cycles can be slow).
   Render settings are saved and always restored, 5.2 `media_type` quirks
   handled
+- **Agent knowledge layer** (v2.5.0) — `get_bpy_api_info` (exact operator
+  parameters, property types and enum items answered from the *live* bpy —
+  check instead of guessing) and `get_pipeline_conventions` (the user's
+  pipeline rules from `conventions.json`: receiver rule, per-DCC
+  units/naming/UV table, preset guidance — answered from the file, no LLM)
 - **Multi-instance:** if the preferred port is busy, the bridge binds the next
   port (9877, 9878, …) and registers itself in
   `%TEMP%/mcp_socket_instances/pid_<pid>.json` (heartbeat every ~10 s) — a
@@ -128,6 +133,8 @@ mcp_socket/
 ├── logcap.py               console ring buffer (Python-level stdout/stderr)
 ├── pipeline.py             FBX export/import per PROKLADKA rules + presets
 ├── render.py               offscreen render (viewport OpenGL / camera)
+├── api_info.py             runtime bpy API lookup (ops/types/enum facts)
+├── conventions.json        user pipeline rules served by get_pipeline_conventions
 ├── presets.py              export preset contracts (PROKLADKA)
 ├── ui.py                   N-panel + preferences + operators + refresh timer
 ├── icons.py                in-memory PNG status icons (green/red dot)
@@ -138,6 +145,12 @@ mcp_socket/
 
 ## Changelog
 
+- **2.5.0** — **agent knowledge layer**, two new tools: `get_bpy_api_info`
+  (exact API facts from the running Blender: operator parameters, property
+  types, enum items — inspired by bpy-dev/blender-mcp's runtime lookup) and
+  `get_pipeline_conventions` (pipeline rules from `conventions.json`:
+  receiver rule, per-DCC units/naming/UV — pattern from
+  seehiong/blender-mcp-bridge's design-rules tools). 18 native MCP tools
 - **2.4.0** — **offscreen render** (`render_offscreen`): mode `viewport` (fast
   OpenGL render of the current 3D view) or `camera` (full scene engine from
   the scene camera); output path/format from the file extension, resolution

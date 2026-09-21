@@ -108,6 +108,21 @@ TOOLS = [
                      "overlays/gizmos); mode 'camera' = full scene-engine render "
                      "from the scene camera (Cycles can be slow; timeout 180 s). "
                      "Returns the filepath, engine, resolution, elapsed time.")},
+    {"name": "get_bpy_api_info", "bridge": "get_bpy_api_info",
+     "params": ["query"],
+     "description": ("Look up exact API facts from the LIVE Blender instead of "
+                     "guessing: 'bpy.ops.<cat>.<op>' returns the operator's real "
+                     "parameter names/types/defaults; 'bpy.types.<Type>' a member "
+                     "overview; 'bpy.types.<Type>.<member>' a property card with "
+                     "enum items. ALWAYS check here before writing execute_code "
+                     "with an unfamiliar operator or enum.")},
+    {"name": "get_pipeline_conventions", "bridge": "get_pipeline_conventions",
+     "params": [],
+     "description": ("The user's pipeline rules from a JSON file (no guessing): "
+                     "receiver rule for imported assets (container t=0 r=0 s=1, "
+                     "dimensions baked, oversize reported), per-DCC units/naming/UV "
+                     "table (Blender/Maya/Houdini/Unreal), naming idempotency, "
+                     "export preset guidance. Read once before asset-moving work.")},
     {"name": "execute_code", "bridge": "execute_code", "params": ["code"],
      "description": ("Escape hatch: run arbitrary bpy Python code in Blender. "
                      "Prefer the typed tools above.")},
@@ -149,7 +164,7 @@ def _tool_schema(tool: dict) -> dict:
                             "description": "maya | houdini | ue | neutral (list_presets)"}
         else:
             props[param] = {"type": types.get(param, "string")}
-        if param in ("path", "name", "code", "filepath"):
+        if param in ("path", "name", "code", "filepath", "query"):
             required.append(param)
     return {"type": "object", "properties": props, "required": required}
 
@@ -197,7 +212,7 @@ def _handle(msg: dict, port: int) -> None:
             "protocolVersion": msg.get("params", {}).get("protocolVersion",
                                                          "2025-11-25"),
             "capabilities": {"tools": {"listChanged": False}},
-            "serverInfo": {"name": "mcp-socket", "version": "2.4.0"},
+            "serverInfo": {"name": "mcp-socket", "version": "2.5.0"},
         })
     elif method == "notifications/initialized":
         pass
